@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Attendance Log Viewer — ALOG 113</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=Sora:wght@300;400;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+</head>
+<body>
+
+<div id="upload-screen">
+  <div class="upload-logo">● ALOG Viewer v2.0</div>
+  <h1 class="upload-title">Attendance Log<br><span>Dashboard</span></h1>
+  <p class="upload-sub">Upload your ALOG .txt file to view &amp; analyse attendance data</p>
+
+  <div class="drop-zone" id="drop-zone">
+    <span class="drop-icon">📂</span>
+    <p class="drop-text">Drag &amp; drop your ALOG .txt file here</p>
+    <p class="drop-hint">UTF-16 encoded tab-separated file</p>
+    <input type="file" id="file-input" accept=".txt" />
+  </div>
+  <button class="upload-btn" id="browse-btn">Browse File</button>
+
+  <div id="loading-bar">
+    <div class="loading-label" id="loading-label">Parsing file…</div>
+    <div class="progress-track">
+      <div class="progress-fill" id="progress-fill"></div>
+    </div>
+  </div>
+</div>
+
+<div id="app">
+
+  <header class="header">
+    <span class="header-logo">■ ALOG 113</span>
+    <span class="header-filename" id="header-filename"></span>
+    <span class="header-sep"></span>
+    <span class="header-stat"><b id="hdr-total">—</b>&nbsp;raw records</span>
+    <span class="header-stat"><b id="hdr-days">—</b>&nbsp;days</span>
+    
+    <button class="reset-btn" id="theme-toggle" style="margin-right: 8px;">🌓 Theme</button>
+    
+    <div class="dropdown" style="margin-right: 8px;">
+      <button class="reset-btn" id="export-btn">📥 Export ▼</button>
+      <div class="dropdown-content" id="export-dropdown">
+        <a href="#" id="export-excel">📊 Export to Excel</a>
+        <a href="#" id="export-pdf">📄 Export to PDF</a>
+        <a href="#" id="export-txt">📝 Original TXT</a>
+      </div>
+    </div>
+
+    <button class="reset-btn" id="reset-btn">↺ New File</button>
+  </header>
+
+  <div class="main-content">
+
+    <div class="stats-row" id="stats-row">
+      <div class="stat-card">
+        <span class="stat-label">Attendance Rows</span>
+        <span class="stat-value blue" id="stat-total">—</span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-label">Present (Both IN+OUT)</span>
+        <span class="stat-value green" id="stat-present">—</span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-label">Only IN Punched</span>
+        <span class="stat-value amber" id="stat-only-in">—</span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-label">Only OUT Punched</span>
+        <span class="stat-value amber" id="stat-only-out">—</span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-label">Unique Employees</span>
+        <span class="stat-value blue" id="stat-emp">—</span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-label">Date Range</span>
+        <span class="stat-value small" id="stat-daterange">—</span>
+      </div>
+    </div>
+
+    <div class="filters-panel">
+      <div class="filters-title">
+        <span>🔍 Filters</span>
+        <span class="filter-badge" id="filter-badge"></span>
+      </div>
+      <div class="filters-grid">
+
+        <div class="filter-group">
+          <label for="f-search">Search Name / Enroll No</label>
+          <input type="text" id="f-search" placeholder="e.g. Ankit or 00000107" autocomplete="off" />
+        </div>
+
+        <div class="filter-group">
+          <label for="f-date-from">Date From</label>
+          <input type="date" id="f-date-from" />
+        </div>
+
+        <div class="filter-group">
+          <label for="f-date-to">Date To</label>
+          <input type="date" id="f-date-to" />
+        </div>
+
+        <div class="filter-group">
+          <label>Employee</label>
+          <div class="custom-dropdown" id="emp-dropdown-container">
+            <button class="custom-dropdown-btn" id="emp-dropdown-btn">All Employees ▼</button>
+            <div class="custom-dropdown-content" id="emp-dropdown-list">
+              <div class="emp-search-box">
+                <input type="text" id="emp-search-input" placeholder="Search employee..." autocomplete="off">
+              </div>
+              <div class="emp-options-wrapper" id="emp-options">
+                </div>
+            </div>
+          </div>
+          <input type="hidden" id="f-employee" value="">
+        </div>
+
+        <div class="filter-group">
+          <label for="f-status">Attendance Status</label>
+          <select id="f-status">
+            <option value="">All</option>
+            <option value="both">Present (IN + OUT)</option>
+            <option value="only-in">Only IN punched</option>
+          </select>
+        </div>
+
+      </div>
+      <div class="filters-actions">
+        <button class="btn-primary" id="apply-btn">Apply Filters</button>
+        <button class="btn-ghost" id="clear-btn">Clear All</button>
+        <span class="result-count" id="result-count"></span>
+      </div>
+    </div>
+
+    <div class="table-wrapper" id="table-wrapper">
+      <div id="table-area"></div>
+    </div>
+
+    <div class="pagination" id="pagination"></div>
+
+  </div></div><div id="toast"></div>
+
+<script src="app.js"></script>
+</body>
+</html>
