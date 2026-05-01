@@ -7,12 +7,16 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=Sora:wght@300;400;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="style.css" />
+  <!-- Libraries for Excel and PDF Export -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
 </head>
 <body>
 
+<!-- ═══════════════════════════════════════════════════════
+     UPLOAD SCREEN
+════════════════════════════════════════════════════════ -->
 <div id="upload-screen">
   <div class="upload-logo">● ALOG Viewer v2.0</div>
   <h1 class="upload-title">Attendance Log<br><span>Dashboard</span></h1>
@@ -34,8 +38,12 @@
   </div>
 </div>
 
+<!-- ═══════════════════════════════════════════════════════
+     MAIN APP
+════════════════════════════════════════════════════════ -->
 <div id="app">
 
+  <!-- Top Header -->
   <header class="header">
     <span class="header-logo">■ ALOG 113</span>
     <span class="header-filename" id="header-filename"></span>
@@ -43,8 +51,10 @@
     <span class="header-stat"><b id="hdr-total">—</b>&nbsp;raw records</span>
     <span class="header-stat"><b id="hdr-days">—</b>&nbsp;days</span>
     
+    <!-- Theme Toggle Button -->
     <button class="reset-btn" id="theme-toggle" style="margin-right: 8px;">🌓 Theme</button>
     
+    <!-- Export Dropdown Menu -->
     <div class="dropdown" style="margin-right: 8px;">
       <button class="reset-btn" id="export-btn">📥 Export ▼</button>
       <div class="dropdown-content" id="export-dropdown">
@@ -59,10 +69,15 @@
 
   <div class="main-content">
 
+    <!-- ── Summary Stats ── -->
     <div class="stats-row" id="stats-row">
       <div class="stat-card">
         <span class="stat-label">Attendance Rows</span>
         <span class="stat-value blue" id="stat-total">—</span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-label">Total Work Hours</span>
+        <span class="stat-value purple" id="stat-total-hours">—</span>
       </div>
       <div class="stat-card">
         <span class="stat-label">Present (Both IN+OUT)</span>
@@ -86,6 +101,7 @@
       </div>
     </div>
 
+    <!-- ── Filters Panel ── -->
     <div class="filters-panel">
       <div class="filters-title">
         <span>🔍 Filters</span>
@@ -108,6 +124,7 @@
           <input type="date" id="f-date-to" />
         </div>
 
+        <!-- Custom Employee Dropdown with Animation & Search -->
         <div class="filter-group">
           <label>Employee</label>
           <div class="custom-dropdown" id="emp-dropdown-container">
@@ -117,9 +134,11 @@
                 <input type="text" id="emp-search-input" placeholder="Search employee..." autocomplete="off">
               </div>
               <div class="emp-options-wrapper" id="emp-options">
-                </div>
+                <!-- Data populated by JS -->
+              </div>
             </div>
           </div>
+          <!-- Hidden input to store selected value for logic -->
           <input type="hidden" id="f-employee" value="">
         </div>
 
@@ -140,13 +159,19 @@
       </div>
     </div>
 
+    <!-- ── Data Table ── -->
     <div class="table-wrapper" id="table-wrapper">
       <div id="table-area"></div>
     </div>
 
+    <!-- ── Pagination ── -->
     <div class="pagination" id="pagination"></div>
 
-  </div></div><div id="toast"></div>
+  </div><!-- /main-content -->
+</div><!-- /app -->
+
+<!-- Toast -->
+<div id="toast"></div>
 
 <script src="app.js"></script>
 </body>
