@@ -43,6 +43,7 @@ if(themeToggle) {
     localStorage.setItem('alog-theme', isLight ? 'light' : 'dark');
   });
 }
+// Load saved theme
 if(localStorage.getItem('alog-theme') === 'light') {
   document.body.classList.add('light-theme');
 }
@@ -54,54 +55,78 @@ const exportDropdownContainer = document.querySelector('.dropdown');
 const empBtnDropdown = document.getElementById('emp-dropdown-btn');
 const empDropdownContainer = document.getElementById('emp-dropdown-container');
 
-exportBtnDropdown.addEventListener('click', (e) => {
-  e.preventDefault();
-  exportDropdownContainer.classList.toggle('active');
-  if(empDropdownContainer) empDropdownContainer.classList.remove('active');
-});
+if(exportBtnDropdown) {
+  exportBtnDropdown.addEventListener('click', (e) => {
+    e.preventDefault();
+    exportDropdownContainer.classList.toggle('active');
+    if(empDropdownContainer) empDropdownContainer.classList.remove('active');
+  });
+}
 
-empBtnDropdown.addEventListener('click', (e) => {
-  e.preventDefault();
-  empDropdownContainer.classList.toggle('active');
-  exportDropdownContainer.classList.remove('active');
-  // Auto focus search when opening
-  if(empDropdownContainer.classList.contains('active')) {
-    setTimeout(() => document.getElementById('emp-search-input').focus(), 100);
-  }
-});
+if(empBtnDropdown) {
+  empBtnDropdown.addEventListener('click', (e) => {
+    e.preventDefault();
+    empDropdownContainer.classList.toggle('active');
+    if(exportDropdownContainer) exportDropdownContainer.classList.remove('active');
+    // Auto focus search when opening
+    if(empDropdownContainer.classList.contains('active')) {
+      setTimeout(() => document.getElementById('emp-search-input').focus(), 100);
+    }
+  });
+}
 
 // Close dropdowns smoothly when clicking outside
 window.addEventListener('click', (e) => {
-  if (!exportDropdownContainer.contains(e.target)) {
+  if (exportDropdownContainer && !exportDropdownContainer.contains(e.target)) {
     exportDropdownContainer.classList.remove('active');
   }
-  if (!empDropdownContainer.contains(e.target)) {
+  if (empDropdownContainer && !empDropdownContainer.contains(e.target)) {
     empDropdownContainer.classList.remove('active');
   }
 });
 
 // Employee Search Logic
-document.getElementById('emp-search-input').addEventListener('input', function() {
-    const val = this.value.toLowerCase();
-    const options = document.querySelectorAll('#emp-options a');
-    options.forEach(a => {
-        if(a.textContent.toLowerCase().includes(val)) {
-            a.style.display = 'block';
-        } else {
-            a.style.display = 'none';
-        }
-    });
-});
+const empSearchInput = document.getElementById('emp-search-input');
+if(empSearchInput) {
+  empSearchInput.addEventListener('input', function() {
+      const val = this.value.toLowerCase();
+      const options = document.querySelectorAll('#emp-options a');
+      options.forEach(a => {
+          if(a.textContent.toLowerCase().includes(val)) {
+              a.style.display = 'block';
+          } else {
+              a.style.display = 'none';
+          }
+      });
+  });
+}
 
-document.getElementById('export-excel').addEventListener('click', (e) => {
-  e.preventDefault(); exportDropdownContainer.classList.remove('active'); exportToExcel();
-});
-document.getElementById('export-pdf').addEventListener('click', (e) => {
-  e.preventDefault(); exportDropdownContainer.classList.remove('active'); exportToPDF();
-});
-document.getElementById('export-txt').addEventListener('click', (e) => {
-  e.preventDefault(); exportDropdownContainer.classList.remove('active'); exportToTXT();
-});
+const exportExcelBtn = document.getElementById('export-excel');
+if(exportExcelBtn) {
+  exportExcelBtn.addEventListener('click', (e) => {
+    e.preventDefault(); 
+    if(exportDropdownContainer) exportDropdownContainer.classList.remove('active'); 
+    exportToExcel();
+  });
+}
+
+const exportPdfBtn = document.getElementById('export-pdf');
+if(exportPdfBtn) {
+  exportPdfBtn.addEventListener('click', (e) => {
+    e.preventDefault(); 
+    if(exportDropdownContainer) exportDropdownContainer.classList.remove('active'); 
+    exportToPDF();
+  });
+}
+
+const exportTxtBtn = document.getElementById('export-txt');
+if(exportTxtBtn) {
+  exportTxtBtn.addEventListener('click', (e) => {
+    e.preventDefault(); 
+    if(exportDropdownContainer) exportDropdownContainer.classList.remove('active'); 
+    exportToTXT();
+  });
+}
 
 /* ─── UPLOAD / FILE HANDLING ─────────────────────────────── */
 document.getElementById('browse-btn').addEventListener('click', () => fileInput.click());
@@ -122,7 +147,10 @@ document.getElementById('clear-btn').addEventListener('click', clearFilters);
 document.getElementById('f-search').addEventListener('input', scheduleApply);
 document.getElementById('f-date-from').addEventListener('change', scheduleApply);
 document.getElementById('f-date-to').addEventListener('change', scheduleApply);
-document.getElementById('f-status').addEventListener('change', applyFilters);
+const statusFilter = document.getElementById('f-status');
+if (statusFilter) {
+  statusFilter.addEventListener('change', applyFilters);
+}
 
 /* ─── LOAD & PARSE FILE ──────────────────────────────────── */
 function loadFile(file) {
@@ -309,7 +337,8 @@ function finalise(rows, filename, rawCount) {
 
 function buildEmployeeDropdown() {
   const wrapper = document.getElementById('emp-options');
-  wrapper.innerHTML = ''; // Clear previous
+  if(!wrapper) return;
+  wrapper.innerHTML = ''; 
 
   // Default option
   const defaultOpt = document.createElement('a');
@@ -351,9 +380,13 @@ function buildEmployeeDropdown() {
   wrapper.querySelectorAll('a').forEach(a => {
       a.addEventListener('click', (e) => {
           e.preventDefault();
-          document.getElementById('f-employee').value = a.dataset.val;
-          document.getElementById('emp-dropdown-btn').innerHTML = a.dataset.val ? a.textContent + ' ▼' : 'All Employees ▼';
-          empDropdownContainer.classList.remove('active');
+          const fEmployee = document.getElementById('f-employee');
+          if(fEmployee) fEmployee.value = a.dataset.val;
+          
+          const empDropdownBtn = document.getElementById('emp-dropdown-btn');
+          if(empDropdownBtn) empDropdownBtn.innerHTML = a.dataset.val ? a.textContent + ' ▼' : 'All Employees ▼';
+          
+          if(empDropdownContainer) empDropdownContainer.classList.remove('active');
           applyFilters();
       });
   });
@@ -368,12 +401,12 @@ function setDefaultDateRange() {
 }
 
 function updateStats(rows) {
-  const present  = rows.filter(r => r.status === 'both').length;
-  const onlyIn   = rows.filter(r => r.status === 'only-in').length;
-  const onlyOut  = rows.filter(r => r.status === 'only-out').length;
-  const empSet   = new Set(rows.map(r => r.enNo));
-  const dates    = [...new Set(rows.map(r => r.date))].sort();
-  document.getElementById('stat-total').textContent    = rows.length.toLocaleString();
+  const present  = rows.filter(r => r.status === 'both' && !r.isSunday).length;
+  const onlyIn   = rows.filter(r => r.status === 'only-in' && !r.isSunday).length;
+  const onlyOut  = rows.filter(r => r.status === 'only-out' && !r.isSunday).length;
+  const empSet   = new Set(rows.filter(r => !r.isSunday).map(r => r.enNo));
+  const dates    = [...new Set(rows.filter(r => !r.isSunday).map(r => r.date))].sort();
+  document.getElementById('stat-total').textContent    = rows.filter(r => !r.isSunday).length.toLocaleString();
   document.getElementById('stat-present').textContent  = present.toLocaleString();
   document.getElementById('stat-only-in').textContent  = onlyIn.toLocaleString();
   document.getElementById('stat-only-out').textContent = onlyOut.toLocaleString();
@@ -393,8 +426,12 @@ function applyFilters() {
   const search   = document.getElementById('f-search').value.trim().toLowerCase();
   const dateFrom = document.getElementById('f-date-from').value;
   const dateTo   = document.getElementById('f-date-to').value;
-  const employee = document.getElementById('f-employee').value;
-  const status   = document.getElementById('f-status').value;
+  
+  const fEmployee = document.getElementById('f-employee');
+  const employee = fEmployee ? fEmployee.value : '';
+  
+  const fStatus = document.getElementById('f-status');
+  const status   = fStatus ? fStatus.value : '';
 
   filteredRows = allRows.filter(r => {
     if (search) {
@@ -408,6 +445,53 @@ function applyFilters() {
     if (status   && r.status !== status) return false;
     return true;
   });
+
+  /* ─── INJECT MISSING SUNDAYS DYNAMICALLY ─── */
+  if (filteredRows.length > 0) {
+    let minDateStr = filteredRows[0].date;
+    let maxDateStr = filteredRows[0].date;
+    
+    // Find min and max date in current filtered view
+    for (let i = 1; i < filteredRows.length; i++) {
+      if (filteredRows[i].date < minDateStr) minDateStr = filteredRows[i].date;
+      if (filteredRows[i].date > maxDateStr) maxDateStr = filteredRows[i].date;
+    }
+
+    let currentD = new Date(minDateStr);
+    let endD = new Date(maxDateStr);
+    // Setting to UTC avoids timezone daylight saving jump bugs
+    currentD.setUTCHours(0,0,0,0);
+    endD.setUTCHours(0,0,0,0);
+
+    while (currentD <= endD) {
+      // 0 represents Sunday
+      if (currentD.getUTCDay() === 0) { 
+        let y = currentD.getUTCFullYear();
+        let m = String(currentD.getUTCMonth() + 1).padStart(2, '0');
+        let d = String(currentD.getUTCDate()).padStart(2, '0');
+        let dateStr = `${y}-${m}-${d}`;
+
+        // Ensure we only insert one Sunday row per actual date
+        let hasSundayRow = filteredRows.some(r => r.isSunday && r.date === dateStr);
+        if (!hasSundayRow) {
+           filteredRows.push({
+             isSunday: true,
+             date: dateStr,
+             sr: null,
+             enNo: '',
+             name: '',
+             inTime: '',
+             outTime: '',
+             durationMin: null,
+             status: '',
+             antipass: '',
+             proxyWork: ''
+           });
+        }
+      }
+      currentD.setUTCDate(currentD.getUTCDate() + 1);
+    }
+  }
 
   filteredRows.sort((a, b) => {
     let va = a[sortCol] ?? '';
@@ -430,14 +514,21 @@ function applyFilters() {
 
 function clearFilters() {
   document.getElementById('f-search').value   = '';
-  document.getElementById('f-employee').value = '';
-  document.getElementById('emp-dropdown-btn').innerHTML = 'All Employees ▼';
-  document.getElementById('emp-search-input').value = '';
   
-  // reset custom search display
+  const fEmployee = document.getElementById('f-employee');
+  if(fEmployee) fEmployee.value = '';
+  
+  const empDropdownBtn = document.getElementById('emp-dropdown-btn');
+  if(empDropdownBtn) empDropdownBtn.innerHTML = 'All Employees ▼';
+  
+  const empSearchInput = document.getElementById('emp-search-input');
+  if(empSearchInput) empSearchInput.value = '';
+  
   document.querySelectorAll('#emp-options a').forEach(a => a.style.display = 'block');
 
-  document.getElementById('f-status').value   = '';
+  const fStatus = document.getElementById('f-status');
+  if(fStatus) fStatus.value   = '';
+  
   setDefaultDateRange();
   applyFilters();
 }
@@ -460,10 +551,12 @@ function updateFilterBadge(search, dateFrom, dateTo, employee, status) {
 }
 
 function updateResultCount() {
-  if (filteredRows.length === allRows.length) {
+  // Discount injected Sunday rows for accurate count
+  const validRows = filteredRows.filter(r => !r.isSunday).length;
+  if (validRows === allRows.length) {
     resultCount.innerHTML = `Showing all <b>${allRows.length.toLocaleString()}</b> rows`;
   } else {
-    resultCount.innerHTML = `<b>${filteredRows.length.toLocaleString()}</b> of ${allRows.length.toLocaleString()} rows`;
+    resultCount.innerHTML = `<b>${validRows.toLocaleString()}</b> of ${allRows.length.toLocaleString()} rows`;
   }
 }
 
@@ -507,13 +600,25 @@ function renderTable() {
 }
 
 function buildRow(r) {
+  // Handle dynamically injected Sundays 
+  if (r.isSunday) {
+    return `<tr class="sunday-row">
+      <td class="td-sr">—</td>
+      <td class="td-enno">—</td>
+      <td class="td-name">S U N D A Y</td>
+      <td class="td-date" style="color:var(--red); font-weight:bold;">${formatDate(r.date)}</td>
+      <td colspan="6" style="text-align: center; letter-spacing: 10px;">S U N D A Y &nbsp;&nbsp;&nbsp; S U N D A Y &nbsp;&nbsp;&nbsp; S U N D A Y</td>
+    </tr>`;
+  }
+
   const inTd = r.inTime ? `<td class="td-in">${r.inTime}${r.hasMultiple && r.status === 'both' ? '<span class="multi-tag">multi</span>' : ''}</td>` : `<td class="td-in missing">—</td>`;
   const outTd = r.outTime ? `<td class="td-out">${r.outTime}</td>` : `<td class="td-out missing">—</td>`;
   const durTd = r.durationMin !== null ? `<td class="td-duration">${formatDuration(r.durationMin)}</td>` : `<td class="td-duration na">—</td>`;
   let statusBadge = (r.status === 'both') ? `<span class="badge badge-present"><span class="dot dot-green"></span>Present</span>` : (r.status === 'only-in') ? `<span class="badge badge-only-in"><span class="dot dot-amber"></span>Only IN</span>` : `<span class="badge badge-only-out"><span class="dot dot-red"></span>Only OUT</span>`;
   const nameCls = r.name ? 'td-name' : 'td-name no-name';
-  // Mode HTML is completely removed from rows as requested
-  return `<tr><td class="td-sr">${r.sr}</td><td class="td-enno">${esc(r.enNo)}</td><td class="${nameCls}">${r.name || 'Unknown'}</td><td class="td-date">${r.date}</td>${inTd}${outTd}${durTd}<td class="col-group-start">${statusBadge}</td><td class="${r.antipass === '1' ? 'cell-yes' : 'cell-no'}">${r.antipass === '1' ? 'Yes' : 'No'}</td><td class="${r.proxyWork === '1' ? 'cell-yes' : 'cell-no'}">${r.proxyWork === '1' ? 'Yes' : 'No'}</td></tr>`;
+  
+  // Date rendering is now strictly controlled through formatting rules
+  return `<tr><td class="td-sr">${r.sr}</td><td class="td-enno">${esc(r.enNo)}</td><td class="${nameCls}">${r.name || 'Unknown'}</td><td class="td-date">${formatDate(r.date)}</td>${inTd}${outTd}${durTd}<td class="col-group-start">${statusBadge}</td><td class="${r.antipass === '1' ? 'cell-yes' : 'cell-no'}">${r.antipass === '1' ? 'Yes' : 'No'}</td><td class="${r.proxyWork === '1' ? 'cell-yes' : 'cell-no'}">${r.proxyWork === '1' ? 'Yes' : 'No'}</td></tr>`;
 }
 
 function sortBy(col) {
@@ -596,11 +701,12 @@ function formatDuration(mins) {
   return h === 0 ? `${m}m` : `${h}h ${m}m`;
 }
 
+// System outputs and database formats enforce DD-MM-YYYY natively
 function formatDate(d) {
   if (!d) return '—';
   const [y, mo, day] = d.split('-');
   const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-  return `${parseInt(day)} ${months[parseInt(mo) - 1]} ${y}`;
+  return `${day}-${mo}-${y}`;
 }
 
 function esc(s) {
@@ -615,18 +721,34 @@ function showToast(msg) {
 
 /* ─── EXPORT LOGIC ─── */
 function getExportData() {
-    return filteredRows.map(r => ({
-        "Sr No": r.sr,
-        "Enroll No": r.enNo,
-        "Name": r.name || "Unknown",
-        "Date": r.date,
-        "IN Time": r.inTime || "---",
-        "OUT Time": r.outTime || "---",
-        "Duration": r.durationMin !== null ? formatDuration(r.durationMin) : "---",
-        "Status": r.status,
-        "Antipass": r.antipass === '1' ? 'Yes' : 'No',
-        "Proxy": r.proxyWork === '1' ? 'Yes' : 'No'
-    }));
+    return filteredRows.map(r => {
+        if (r.isSunday) {
+            return {
+                "Sr No": "---",
+                "Enroll No": "---",
+                "Name": "S U N D A Y",
+                "Date": formatDate(r.date),
+                "IN Time": "---",
+                "OUT Time": "---",
+                "Duration": "---",
+                "Status": "SUNDAY",
+                "Antipass": "---",
+                "Proxy": "---"
+            };
+        }
+        return {
+            "Sr No": r.sr,
+            "Enroll No": r.enNo,
+            "Name": r.name || "Unknown",
+            "Date": formatDate(r.date),
+            "IN Time": r.inTime || "---",
+            "OUT Time": r.outTime || "---",
+            "Duration": r.durationMin !== null ? formatDuration(r.durationMin) : "---",
+            "Status": r.status === 'both' ? 'Present' : (r.status === 'only-in' ? 'Only IN' : 'Only OUT'),
+            "Antipass": r.antipass === '1' ? 'Yes' : 'No',
+            "Proxy": r.proxyWork === '1' ? 'Yes' : 'No'
+        };
+    });
 }
 
 function exportToExcel() {
