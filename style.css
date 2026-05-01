@@ -267,7 +267,8 @@ body {
 /* ── Stats Row ────────────────────────────────────────────── */
 .stats-row {
   display: grid;
-  grid-template-columns: repeat(7, 1fr); /* Updated for 7 columns */
+  /* Updated to prevent date range from collapsing */
+  grid-template-columns: repeat(6, 1fr) minmax(180px, 1.5fr);
   gap: 1px;
   background: var(--border);
   border-bottom: 1px solid var(--border);
@@ -302,8 +303,15 @@ body {
 .stat-value.blue  { color: var(--accent2); }
 .stat-value.green { color: var(--green); }
 .stat-value.amber { color: var(--amber); }
-.stat-value.purple { color: var(--purple); } /* New addition for total hours */
-.stat-value.small { font-size: 0.78rem; padding-top: 0.3rem; color: var(--text2); line-height: 1.5; }
+.stat-value.purple { color: var(--purple); }
+/* Prevent wrapping on small text */
+.stat-value.small { 
+    font-size: 0.76rem; 
+    padding-top: 0.3rem; 
+    color: var(--text2); 
+    line-height: 1.5; 
+    white-space: nowrap; 
+}
 
 /* ── Filters Panel ────────────────────────────────────────── */
 .filters-panel {
