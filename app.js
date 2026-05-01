@@ -406,11 +406,36 @@ function updateStats(rows) {
   const onlyOut  = rows.filter(r => r.status === 'only-out' && !r.isSunday).length;
   const empSet   = new Set(rows.filter(r => !r.isSunday).map(r => r.enNo));
   const dates    = [...new Set(rows.filter(r => !r.isSunday).map(r => r.date))].sort();
+  
+  // Calculate Total Working Hours properly
+  let totalMins = 0;
+  rows.forEach(r => {
+      if(!r.isSunday && r.durationMin) {
+          totalMins += r.durationMin;
+      }
+  });
+  
+  let th = Math.floor(totalMins / 60);
+  let tm = Math.round(totalMins % 60);
+  // Extremely rare case where JS precision round makes it exactly 60
+  if (tm === 60) {
+      th += 1;
+      tm = 0;
+  }
+  
+  const totalHoursStr = totalMins > 0 ? `${th}h ${tm}m` : '—';
+  
   document.getElementById('stat-total').textContent    = rows.filter(r => !r.isSunday).length.toLocaleString();
   document.getElementById('stat-present').textContent  = present.toLocaleString();
   document.getElementById('stat-only-in').textContent  = onlyIn.toLocaleString();
   document.getElementById('stat-only-out').textContent = onlyOut.toLocaleString();
   document.getElementById('stat-emp').textContent      = empSet.size.toLocaleString();
+  
+  const statHoursEl = document.getElementById('stat-total-hours');
+  if (statHoursEl) {
+      statHoursEl.textContent = totalHoursStr;
+  }
+  
   if (dates.length) {
     document.getElementById('stat-daterange').textContent =
       `${formatDate(dates[0])}\n→ ${formatDate(dates[dates.length - 1])}`;
