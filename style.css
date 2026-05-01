@@ -267,7 +267,7 @@ body {
 /* ── Stats Row ────────────────────────────────────────────── */
 .stats-row {
   display: grid;
-  grid-template-columns: repeat(6, 1fr);
+  grid-template-columns: repeat(7, 1fr); /* Updated for 7 columns */
   gap: 1px;
   background: var(--border);
   border-bottom: 1px solid var(--border);
@@ -302,6 +302,7 @@ body {
 .stat-value.blue  { color: var(--accent2); }
 .stat-value.green { color: var(--green); }
 .stat-value.amber { color: var(--amber); }
+.stat-value.purple { color: var(--purple); } /* New addition for total hours */
 .stat-value.small { font-size: 0.78rem; padding-top: 0.3rem; color: var(--text2); line-height: 1.5; }
 
 /* ── Filters Panel ────────────────────────────────────────── */
@@ -780,7 +781,7 @@ tbody td.col-group-start {
 
 /* ── Responsive ───────────────────────────────────────────── */
 @media (max-width: 900px) {
-  .stats-row { grid-template-columns: repeat(3, 1fr); }
+  .stats-row { grid-template-columns: repeat(4, 1fr); }
 }
 @media (max-width: 600px) {
   .stats-row { grid-template-columns: repeat(2, 1fr); }
