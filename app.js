@@ -10,8 +10,11 @@ let allRows      = [];
 let filteredRows = [];
 let currentPage  = 1;
 let pageSize     = 100;
-let sortCol      = 'date';
+
+// Update: Sort parameters for 3-state sort
+let sortCol      = ''; // Empty by default
 let sortDir      = 1;
+
 let applyTimer   = null;
 const nameMap = new Map();
 
@@ -144,9 +147,11 @@ fileInput.addEventListener('change', () => {
 document.getElementById('reset-btn').addEventListener('click', resetApp);
 document.getElementById('apply-btn').addEventListener('click', applyFilters);
 document.getElementById('clear-btn').addEventListener('click', clearFilters);
-document.getElementById('f-search').addEventListener('input', scheduleApply);
+
+// Removed f-search DOM binding to match HTML changes, maintaining robust flow.
 document.getElementById('f-date-from').addEventListener('change', scheduleApply);
 document.getElementById('f-date-to').addEventListener('change', scheduleApply);
+
 const statusFilter = document.getElementById('f-status');
 if (statusFilter) {
   statusFilter.addEventListener('change', applyFilters);
@@ -309,7 +314,7 @@ function buildAttendanceRows(rawRecords) {
       mode,
       antipass,
       proxyWork,
-      durationMin,
+      durationMin, // this is saved as a pure Number
       totalPunches: punches.length,
       hasMultiple:  punches.length > 2,
     });
@@ -400,6 +405,7 @@ function setDefaultDateRange() {
   }
 }
 
+/* ─── ULTIMATE ACCURATE STATS UPDATER ─── */
 function updateStats(rows) {
   const present  = rows.filter(r => r.status === 'both' && !r.isSunday).length;
   const onlyIn   = rows.filter(r => r.status === 'only-in' && !r.isSunday).length;
@@ -407,11 +413,11 @@ function updateStats(rows) {
   const empSet   = new Set(rows.filter(r => !r.isSunday).map(r => r.enNo));
   const dates    = [...new Set(rows.filter(r => !r.isSunday).map(r => r.date))].sort();
   
-  // Calculate Total Working Hours properly
+  // Calculate Total Working Hours explicitly solving the blank rendering
   let totalMins = 0;
   rows.forEach(r => {
-      if(!r.isSunday && r.durationMin) {
-          totalMins += r.durationMin;
+      if (!r.isSunday && r.durationMin !== null && r.durationMin !== undefined) {
+          totalMins += parseFloat(r.durationMin);
       }
   });
   
@@ -448,7 +454,6 @@ function scheduleApply() {
 }
 
 function applyFilters() {
-  const search   = document.getElementById('f-search').value.trim().toLowerCase();
   const dateFrom = document.getElementById('f-date-from').value;
   const dateTo   = document.getElementById('f-date-to').value;
   
@@ -459,11 +464,7 @@ function applyFilters() {
   const status   = fStatus ? fStatus.value : '';
 
   filteredRows = allRows.filter(r => {
-    if (search) {
-      const nameMatch = r.name.toLowerCase().includes(search);
-      const ennoMatch = r.enNo.toLowerCase().includes(search);
-      if (!nameMatch && !ennoMatch) return false;
-    }
+    // Redundant text search removed per user request
     if (dateFrom && r.date < dateFrom) return false;
     if (dateTo   && r.date > dateTo)   return false;
     if (employee && r.enNo !== employee) return false;
@@ -476,7 +477,6 @@ function applyFilters() {
     let minDateStr = filteredRows[0].date;
     let maxDateStr = filteredRows[0].date;
     
-    // Find min and max date in current filtered view
     for (let i = 1; i < filteredRows.length; i++) {
       if (filteredRows[i].date < minDateStr) minDateStr = filteredRows[i].date;
       if (filteredRows[i].date > maxDateStr) maxDateStr = filteredRows[i].date;
@@ -484,19 +484,16 @@ function applyFilters() {
 
     let currentD = new Date(minDateStr);
     let endD = new Date(maxDateStr);
-    // Setting to UTC avoids timezone daylight saving jump bugs
     currentD.setUTCHours(0,0,0,0);
     endD.setUTCHours(0,0,0,0);
 
     while (currentD <= endD) {
-      // 0 represents Sunday
       if (currentD.getUTCDay() === 0) { 
         let y = currentD.getUTCFullYear();
         let m = String(currentD.getUTCMonth() + 1).padStart(2, '0');
         let d = String(currentD.getUTCDate()).padStart(2, '0');
         let dateStr = `${y}-${m}-${d}`;
 
-        // Ensure we only insert one Sunday row per actual date
         let hasSundayRow = filteredRows.some(r => r.isSunday && r.date === dateStr);
         if (!hasSundayRow) {
            filteredRows.push({
@@ -518,28 +515,36 @@ function applyFilters() {
     }
   }
 
-  filteredRows.sort((a, b) => {
-    let va = a[sortCol] ?? '';
-    let vb = b[sortCol] ?? '';
-    if (sortCol === 'sr' || sortCol === 'durationMin') {
-      va = va === null ? -1 : +va;
-      vb = vb === null ? -1 : +vb;
-    }
-    if (va < vb) return -sortDir;
-    if (va > vb) return  sortDir;
-    return 0;
-  });
+  /* ─── APPLY SORTING IF SPECIFIED ─── */
+  if (sortCol) {
+    filteredRows.sort((a, b) => {
+      let va = a[sortCol] ?? '';
+      let vb = b[sortCol] ?? '';
+      if (sortCol === 'sr' || sortCol === 'durationMin') {
+        va = (va === null || va === '') ? -1 : +va;
+        vb = (vb === null || vb === '') ? -1 : +vb;
+      }
+      if (va < vb) return -sortDir;
+      if (va > vb) return  sortDir;
+      return 0;
+    });
+  } else {
+    // 3rd State logic: Reset back to chronological default
+    filteredRows.sort((a, b) => {
+        const da = a.date + (a.enNo || '');
+        const db = b.date + (b.enNo || '');
+        return da.localeCompare(db);
+    });
+  }
 
   currentPage = 1;
   updateStats(filteredRows);
-  updateFilterBadge(search, dateFrom, dateTo, employee, status);
+  updateFilterBadge('', dateFrom, dateTo, employee, status);
   updateResultCount();
   renderTable();
 }
 
 function clearFilters() {
-  document.getElementById('f-search').value   = '';
-  
   const fEmployee = document.getElementById('f-employee');
   if(fEmployee) fEmployee.value = '';
   
@@ -555,13 +560,17 @@ function clearFilters() {
   if(fStatus) fStatus.value   = '';
   
   setDefaultDateRange();
+  
+  // Also clear sorting entirely
+  sortCol = '';
+  sortDir = 1;
+  
   applyFilters();
 }
 
 function updateFilterBadge(search, dateFrom, dateTo, employee, status) {
   let count = 0;
   const allDates = allRows.map(r => r.date).sort();
-  if (search)   count++;
   if (employee) count++;
   if (status)   count++;
   if (allDates.length) {
@@ -576,7 +585,6 @@ function updateFilterBadge(search, dateFrom, dateTo, employee, status) {
 }
 
 function updateResultCount() {
-  // Discount injected Sunday rows for accurate count
   const validRows = filteredRows.filter(r => !r.isSunday).length;
   if (validRows === allRows.length) {
     resultCount.innerHTML = `Showing all <b>${allRows.length.toLocaleString()}</b> rows`;
@@ -611,6 +619,7 @@ function renderTable() {
   let html = '<table><thead><tr>';
   for (const col of COLS) {
     const grpCls  = col.grp ? ' col-group-start' : '';
+    // Only display arrows if actively sorting on this column
     const sortCls = sortCol === col.key ? (sortDir === 1 ? ' sort-asc' : ' sort-desc') : '';
     html += `<th class="${grpCls}${sortCls}" data-col="${col.key}" title="${col.tip}">${col.label}</th>`;
   }
@@ -618,6 +627,7 @@ function renderTable() {
   for (const r of page) { html += buildRow(r); }
   html += '</tbody></table>';
   tableArea.innerHTML = html;
+  
   tableArea.querySelectorAll('thead th[data-col]').forEach(th => {
     th.addEventListener('click', () => sortBy(th.dataset.col));
   });
@@ -625,7 +635,6 @@ function renderTable() {
 }
 
 function buildRow(r) {
-  // Handle dynamically injected Sundays 
   if (r.isSunday) {
     return `<tr class="sunday-row">
       <td class="td-sr">—</td>
@@ -642,13 +651,22 @@ function buildRow(r) {
   let statusBadge = (r.status === 'both') ? `<span class="badge badge-present"><span class="dot dot-green"></span>Present</span>` : (r.status === 'only-in') ? `<span class="badge badge-only-in"><span class="dot dot-amber"></span>Only IN</span>` : `<span class="badge badge-only-out"><span class="dot dot-red"></span>Only OUT</span>`;
   const nameCls = r.name ? 'td-name' : 'td-name no-name';
   
-  // Date rendering is now strictly controlled through formatting rules
   return `<tr><td class="td-sr">${r.sr}</td><td class="td-enno">${esc(r.enNo)}</td><td class="${nameCls}">${r.name || 'Unknown'}</td><td class="td-date">${formatDate(r.date)}</td>${inTd}${outTd}${durTd}<td class="col-group-start">${statusBadge}</td><td class="${r.antipass === '1' ? 'cell-yes' : 'cell-no'}">${r.antipass === '1' ? 'Yes' : 'No'}</td><td class="${r.proxyWork === '1' ? 'cell-yes' : 'cell-no'}">${r.proxyWork === '1' ? 'Yes' : 'No'}</td></tr>`;
 }
 
+/* ─── 3-STATE SORTING LOGIC ─── */
 function sortBy(col) {
-  if (sortCol === col) sortDir = -sortDir;
-  else { sortCol = col; sortDir = 1; }
+  if (sortCol === col) {
+      if (sortDir === 1) {
+          sortDir = -1; // Click 2: Descending
+      } else {
+          sortCol = ''; // Click 3: Reset
+          sortDir = 1;
+      }
+  } else {
+      sortCol = col; // Click 1: Ascending
+      sortDir = 1;
+  }
   applyFilters();
 }
 
@@ -726,12 +744,11 @@ function formatDuration(mins) {
   return h === 0 ? `${m}m` : `${h}h ${m}m`;
 }
 
-// System outputs and database formats enforce DD-MM-YYYY natively
 function formatDate(d) {
   if (!d) return '—';
   const [y, mo, day] = d.split('-');
   const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-  return `${day}-${mo}-${y}`;
+  return `${parseInt(day)} ${months[parseInt(mo) - 1]} ${y}`;
 }
 
 function esc(s) {
